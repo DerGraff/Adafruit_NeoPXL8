@@ -179,7 +179,7 @@ protected:
   uint offset = 0;
   int dma_channel;               ///< DMA channel #
   dma_channel_config dma_config; ///< DMA configuration
-#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#elif defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
   gdma_channel_handle_t dma_chan; ///< DMA channel
   dma_descriptor_t *desc;         ///< DMA descriptor pointer
   uint8_t *allocAddr;             ///< Allocated buf into which dmaBuf points
@@ -535,7 +535,7 @@ protected:
   volatile bool new_pixels = true;             ///< show()/refresh() sync
 #if defined(ARDUINO_ARCH_RP2040)
   mutex_t mutex; ///< For synchronizing cores
-#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#elif defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
   SemaphoreHandle_t mutex; ///< For synchronizing cores
 #endif
 };

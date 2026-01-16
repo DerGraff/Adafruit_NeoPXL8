@@ -151,7 +151,7 @@ static void dma_finish_irq(void) {
   }
 }
 
-#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#elif defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
 
 // Callback for end-of-DMA-transfer
 static IRAM_ATTR bool dma_callback(gdma_channel_handle_t dma_chan,
@@ -296,7 +296,7 @@ Adafruit_NeoPXL8::~Adafruit_NeoPXL8() {
   if (dmaBuf[0])
     free(dmaBuf[0]);
   irq_remove_handler(DMA_IRQ_N == 0 ? DMA_IRQ_0 : DMA_IRQ_1, dma_finish_irq);
-#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#elif defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
   gdma_reset(dma_chan);
   if (allocAddr)
     heap_caps_free(allocAddr);
@@ -406,7 +406,7 @@ bool Adafruit_NeoPXL8::begin(bool dbuf) {
       return true; // Success!
     }
 
-#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#elif defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
 
     uint32_t xfer_size = numLEDs * bytesPerPixel * 3;
     uint32_t buf_size = xfer_size + 3;        // +3 for long align
@@ -747,7 +747,7 @@ void Adafruit_NeoPXL8::show(void) {
     // Single-buffered operation. Must wait for current DMA transfer to
     // complete before staging new data in the buffer, or it may get
     // corrupted in mid-transfer.
-#if defined(CONFIG_IDF_TARGET_ESP32S3)
+#if defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
     while (LCD_CAM.lcd_user.lcd_start)
       ; // Wait for DMA IRQ
     lastBitTime = micros();
@@ -763,7 +763,7 @@ void Adafruit_NeoPXL8::show(void) {
     if (!staged)
       stage(); // Convert data
       // Still have to wait for DMA to finish before latch check though.
-#if defined(CONFIG_IDF_TARGET_ESP32S3)
+#if defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
     while (LCD_CAM.lcd_user.lcd_start)
       ; // Wait for DMA IRQ
     lastBitTime = micros();
@@ -792,7 +792,7 @@ void Adafruit_NeoPXL8::show(void) {
     ;
   dma_channel_start(dma_channel); // Start new transfer
 
-#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#elif defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
 
   gdma_reset(dma_chan);
   LCD_CAM.lcd_user.lcd_dout = 1;
@@ -886,7 +886,7 @@ bool Adafruit_NeoPXL8HDR::begin(bool blend, uint8_t bits, bool dbuf) {
       if (Adafruit_NeoPXL8::begin(dbuf)) {
 #if defined(ARDUINO_ARCH_RP2040)
         mutex_init(&mutex);
-#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#elif defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
         mutex = xSemaphoreCreateMutex();
 #endif // end ESP32S3/RP2040
 
@@ -1000,7 +1000,7 @@ void Adafruit_NeoPXL8HDR::show(void) {
   // vying for dither access got ugly fast. Simpler as distinct behaviors.
 #if defined(ARDUINO_ARCH_RP2040)
   mutex_enter_blocking(&mutex); // Sync w/refresh() on other core
-#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#elif defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
   xSemaphoreTake(mutex, 100);
 #else
   noInterrupts();
@@ -1011,7 +1011,7 @@ void Adafruit_NeoPXL8HDR::show(void) {
   }
 #if defined(ARDUINO_ARCH_RP2040)
   mutex_exit(&mutex); // refresh() can resume
-#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#elif defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
   xSemaphoreGive(mutex);
 #else
   interrupts();
@@ -1046,14 +1046,14 @@ void Adafruit_NeoPXL8HDR::refresh(void) {
     }
 #if defined(ARDUINO_ARCH_RP2040)
     mutex_enter_blocking(&mutex); // Wait on show() on other thread
-#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#elif defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
     xSemaphoreTake(mutex, 100);
 #endif
     uint16_t *p1 = pixel_buf[stage_index];     // Prev pixels
     uint16_t *p2 = pixel_buf[1 - stage_index]; // Next pixels
 #if defined(ARDUINO_ARCH_RP2040)
     mutex_exit(&mutex); // Thx, back to you...
-#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#elif defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
     xSemaphoreGive(mutex);
 #endif
 

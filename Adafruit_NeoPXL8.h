@@ -27,7 +27,7 @@
 #include "hardware/irq.h"
 #include "hardware/pio.h"
 #include "pico/mutex.h"
-#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#elif defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
 #include <driver/periph_ctrl.h>
 #include <esp_private/gdma.h>
 #include <esp_rom_gpio.h>

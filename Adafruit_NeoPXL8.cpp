@@ -454,6 +454,26 @@ bool Adafruit_NeoPXL8::begin(bool dbuf) {
 
       // Configure frame format
       LCD_CAM.lcd_ctrl.lcd_rgb_mode_en = 0;    // i8080 mode (not RGB)
+
+    #if defined(CONFIG_IDF_TARGET_ESP32P4)
+      // ESP32P4 LCD_CAM register fields differ from ESP32S3.
+      // Disable RGB/YUV converter
+      LCD_CAM.lcd_rgb_yuv.lcd_conv_enable = 0;
+      LCD_CAM.lcd_misc.lcd_next_frame_en = 0; // Do NOT auto-frame
+      LCD_CAM.lcd_dly_mode_cfg1.val = 0;      // No output delays
+      LCD_CAM.lcd_dly_mode_cfg2.val = 0;
+      LCD_CAM.lcd_user.lcd_always_out_en = 1; // Enable 'always out' mode
+      LCD_CAM.lcd_user.lcd_dout_byte_swizzle_enable = 0;
+      LCD_CAM.lcd_user.lcd_dout_byte_swizzle_mode = 0;
+      LCD_CAM.lcd_user.lcd_dout_bit_order = 0;
+      LCD_CAM.lcd_user.lcd_bit_order = 0;
+      LCD_CAM.lcd_user.lcd_byte_order = 0;
+      LCD_CAM.lcd_user.lcd_byte_mode = 0; // 8-bit mode
+      LCD_CAM.lcd_misc.lcd_wire_mode = 0; // 8-bit bus
+      LCD_CAM.lcd_user.lcd_dummy = 1;     // Dummy phase(s) @ LCD start
+      LCD_CAM.lcd_user.lcd_dummy_cyclelen = 0; // 1 dummy phase
+      LCD_CAM.lcd_user.lcd_cmd = 0;            // No command at LCD start
+    #else
       LCD_CAM.lcd_rgb_yuv.lcd_conv_bypass = 0; // Disable RGB/YUV converter
       LCD_CAM.lcd_misc.lcd_next_frame_en = 0;  // Do NOT auto-frame
       LCD_CAM.lcd_data_dout_mode.val = 0;      // No data delays
@@ -464,12 +484,20 @@ bool Adafruit_NeoPXL8::begin(bool dbuf) {
       LCD_CAM.lcd_user.lcd_dummy = 1;          // Dummy phase(s) @ LCD start
       LCD_CAM.lcd_user.lcd_dummy_cyclelen = 0; // 1 dummy phase
       LCD_CAM.lcd_user.lcd_cmd = 0;            // No command at LCD start
+    #endif
       // Dummy phase(s) MUST be enabled for DMA to trigger reliably.
 
       const uint8_t mux[] = {
+    #if defined(CONFIG_IDF_TARGET_ESP32P4)
+          LCD_DATA_OUT_PAD_OUT0_IDX, LCD_DATA_OUT_PAD_OUT1_IDX,
+          LCD_DATA_OUT_PAD_OUT2_IDX, LCD_DATA_OUT_PAD_OUT3_IDX,
+          LCD_DATA_OUT_PAD_OUT4_IDX, LCD_DATA_OUT_PAD_OUT5_IDX,
+          LCD_DATA_OUT_PAD_OUT6_IDX, LCD_DATA_OUT_PAD_OUT7_IDX,
+    #else
           LCD_DATA_OUT0_IDX, LCD_DATA_OUT1_IDX, LCD_DATA_OUT2_IDX,
           LCD_DATA_OUT3_IDX, LCD_DATA_OUT4_IDX, LCD_DATA_OUT5_IDX,
           LCD_DATA_OUT6_IDX, LCD_DATA_OUT7_IDX,
+    #endif
       };
 
       // Route LCD signals to GPIO pins
@@ -796,7 +824,11 @@ void Adafruit_NeoPXL8::show(void) {
 
   gdma_reset(dma_chan);
   LCD_CAM.lcd_user.lcd_dout = 1;
+#if defined(CONFIG_IDF_TARGET_ESP32P4)
+  LCD_CAM.lcd_user.lcd_update_reg = 1;
+#else
   LCD_CAM.lcd_user.lcd_update = 1;
+#endif
   LCD_CAM.lcd_misc.lcd_afifo_reset = 1;
 
   uint8_t bytesPerPixel = (wOffset == rOffset) ? 3 : 4;
